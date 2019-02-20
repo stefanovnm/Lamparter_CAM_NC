@@ -17,6 +17,13 @@ namespace Test_forms
         public string filePathOnly = string.Empty;
         public string fileNameGlobal = string.Empty;
         public string projectNumber = string.Empty;
+        public string filePathCheck = string.Empty;
+        public string filePathFullCheck = string.Empty;
+        public string filePathOnlyCheck = string.Empty;
+        public string fileNameGlobalCheck = string.Empty;
+        public bool isLoadedCheckList = false;
+
+        private Dictionary<string, int> DSTVList = new Dictionary<string, int>();
 
         public string FilePath()
         {
@@ -47,6 +54,29 @@ namespace Test_forms
             }
 
             System.IO.Directory.CreateDirectory(@"D:\Lamparter\" + projectNumber + @"\" + filePath);
+
+            if (isLoadedCheckList == false && fileNameGlobalCheck != string.Empty)
+            {
+                FillDSTVList(filePathFullCheck);
+            }
+
+            /*
+            //to delete
+            string all = string.Empty;
+            
+            foreach (KeyValuePair<string, int> kvp in DSTVList)
+            {
+                all = all + "\nPos " + kvp.Key + " , Length = " + kvp.Value;
+            }
+
+            MessageBox.Show(all);
+            //to here
+            */
+
+            if (isLoadedCheckList == false)
+            {
+                MessageBox.Show("No list is loaded. If NC is missing check the length in CAM manually");
+            } 
 
             DoIt();
         }
@@ -80,7 +110,8 @@ namespace Test_forms
                 filePathOnly = filePath.Substring(0, lastSlashIndex + 1);
                 fileNameGlobal = filePath.Substring(lastSlashIndex + 1, filePath.Length - lastSlashIndex - 1);
                 filePath = filePath.Substring(lastSlashIndex + 1, lastDotIndex - lastSlashIndex - 1);
-                label1.Text = filePathOnly + fileNameGlobal;
+                //label1.Text = filePathOnly + fileNameGlobal;
+                label6.Text = "Selected: " + fileNameGlobal;
             }
         }
         
@@ -417,26 +448,26 @@ namespace Test_forms
         {
             if (DIN == "EN-14399-4")
             {
-                DIN = "EN 14399-4 10.9 HV TZN";
+                DIN = "EN 14399-4-6 10.9 HV TZN";
             }
 
-            if (DIN == "EN ISO 4017" || DIN == "933")
+            ////rev9
+            if (DIN == "13918")
             {
-                DIN = "DIN EN ISO 4017-4032-7089/2/FORM B 8.8 TZN";
+                DIN = "EN 13918";
             }
 
-            ////rev5
-            if (DIN == "ISO 4017" || DIN == "4017")
+            if (DIN == "ISO 4017" || DIN == "4017" || DIN == "ISO4017" || DIN == "933")
             {
-                DIN = "ISO 4017-7090-4032";
+                DIN = "ISO 4017-7090-7090-4032";
             }
 
-            if (DIN == "ISO 4014" || DIN == "4014")
+            if (DIN == "ISO 4014" || DIN == "4014" || DIN == "ISO4014" || DIN == "931")
             {
-                DIN = "ISO 4014-7090-4032";
+                DIN = "ISO 4014-7090-7090-4032";
             }
 
-            if (DIN == "Mu 4032+Sch 7090")
+            if (DIN == "ISO4032+ISO7089")
             {
                 DIN = "ISO 4032-7090";
             }
@@ -446,12 +477,22 @@ namespace Test_forms
                 DIN = "EN 14399-4-6";
             }
 
+            if (DIN == "ISO4014 + 4035" || DIN == "4014+4035")
+            {
+                DIN = "ISO 4014-7090-7090-4032-4035";
+            }
+
+            if (DIN == "ISO4017 + 4035" || DIN == "4017+4035")
+            {
+                DIN = "ISO 4017-7090-7090-4032-4035";
+            }
+
             return DIN;
         }
 
         static string RenameBolt(string boltName, string DIN, string boltLength)
         {
-            if (DIN == "6914" || DIN == "14399" || DIN == "EN-14399-4")
+            if (DIN == "6914" || DIN == "14399" || DIN == "EN-14399-4" || DIN== "EN 14399-4-6 10.9 HV TZN")
             {
                 boltName = boltName.Substring(3, boltName.Length - 3);
                 boltName = "6KT SCHR " + boltName + " MU2S";
@@ -462,11 +503,33 @@ namespace Test_forms
                 boltName = "6KT SCHR " + boltName + " MUS";
             }
 
-            ////rev 5
-            if (DIN == "933" || DIN == "ISO 4017" || DIN == "ISO 4017-7090-7093-7042")
+            if (DIN == "13918" || DIN == "EN 13918")
+            {
+                boltName = "SCHR " + boltName.Substring(13, boltName.Length - 13);
+            }
+
+            ////rev 9
+            if (DIN == "933" || DIN == "ISO 4017" || DIN == "ISO 4017-7090-7093-7042" || DIN == "ISO4017")
             {
                 boltName = "6KT SCHR " + boltName + " MU2S";
             }
+
+            //// rev 9
+            if (DIN == "931" || DIN == "ISO 4014" || DIN == "ISO 4014-7090-7093-7042" || DIN == "ISO4014")
+            {
+                boltName = "6KT SCHR " + boltName + " MU2S";
+            }
+
+            if (DIN == "ISO4014 + 4035" || DIN == "4014+4035" || DIN == "ISO 4014-7090-7090-4032-4035")
+            {
+                boltName = "6KT SCHR " + boltName + " 2MU2S";
+            }
+
+            if (DIN == "ISO4017 + 4035" || DIN == "4017+4035" || DIN == "ISO 4017-7090-7090-4032-4035")
+            {
+                boltName = "6KT SCHR " + boltName + " 2MU2S";
+            }
+            
 
             if (DIN == "4762")
             {
@@ -501,6 +564,38 @@ namespace Test_forms
             return 0;
         }
 
+        public void FillDSTVList(string path)
+        {
+            StreamReader list = new StreamReader(path, System.Text.Encoding.Default);
+
+            int linesCount = File.ReadAllLines(path).Count();
+            string line;
+
+            while ((line = list.ReadLine()) != null)
+            {
+                string[] rowValues = line.Split(new char[] { ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if (rowValues[0] != "pos")
+                {
+                    if (rowValues[0][0]=='H')
+                    {
+                        string mainPosNumber = rowValues[0];
+                        mainPosNumber = mainPosNumber.Substring(1);
+                        DSTVList.Add(mainPosNumber, int.Parse(rowValues[1]));
+                    }
+                    else
+                    {
+                        DSTVList.Add(rowValues[0], int.Parse(rowValues[1]));
+                    }
+                }
+            }
+
+            list.Close();
+            isLoadedCheckList = true;
+        }
+
+        
+
         public int GetNCLength(string pos)
         {
             int length = 0;
@@ -520,8 +615,7 @@ namespace Test_forms
                 ncName = string.Empty;
             }
 
-
-            if(ncName != string.Empty)
+            if (ncName != string.Empty)
             {
                 StreamReader ncReader = new StreamReader(ncName);
                 ncReader.ReadLine();
@@ -545,6 +639,24 @@ namespace Test_forms
                 //MessageBox.Show(lengthLine + " : " + netLength + " - " + length);
             }
 
+            //Rev 8
+            if (isLoadedCheckList == true)
+            {
+                int newLength = 0;
+                if (!File.Exists(filePathOnly + pos + ".nc"))
+                {
+                    if (DSTVList.TryGetValue(pos, out newLength))
+                    {
+                        length = newLength;
+                        MessageBox.Show("Length from list: " + pos + ": " + newLength);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Check length in cam for pos." + pos + " manually!!!");
+                    }
+                }
+            }
+            
             return length;
         }
 
@@ -552,6 +664,18 @@ namespace Test_forms
         {
             string[] lengths = row.Split(new[] { ',' });
             return lengths[0];
+        }
+
+        public int FindNetLengthFromList()
+        {
+            int length = 0;
+
+            Dictionary<string, int> listPosLength = new Dictionary<string, int>();
+
+
+
+
+            return length;
         }
 
         public int DoIt()
@@ -817,6 +941,36 @@ namespace Test_forms
             }
         
             return 0;
-        }       
+        }
+
+        private void label5_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd1 = new OpenFileDialog();
+            ofd1.Filter = "CSV|*.csv|All|*.*";
+            ofd1.Title = "Select csv";
+
+            if (ofd1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                label5.Text = "Selected: " + ofd1.FileName.ToString();
+                filePathCheck = ofd1.FileName.ToString();
+                filePathFullCheck = ofd1.FileName.ToString();
+
+                int lastDotIndex = filePathCheck.LastIndexOf('.');
+                int lastSlashIndex = filePathCheck.LastIndexOf(@"\");
+                filePathOnlyCheck = filePathCheck.Substring(0, lastSlashIndex + 1);
+                fileNameGlobalCheck = filePathCheck.Substring(lastSlashIndex + 1, filePathCheck.Length - lastSlashIndex - 1);
+                filePathCheck = filePathCheck.Substring(lastSlashIndex + 1, lastDotIndex - lastSlashIndex - 1);
+                label1.Text = filePathOnlyCheck + fileNameGlobalCheck;
+
+                label5.Text = "Selected: " + fileNameGlobalCheck;
+            }
+        }
+
+
     }
 }
